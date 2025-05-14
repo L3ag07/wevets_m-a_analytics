@@ -1,6 +1,7 @@
 SELECT DISTINCT
     e.sigla AS Centro,
     CONVERT(NVARCHAR, cdv.Data, 105) AS DtDocumento,
+    cdv.Documento + ' ' + cdv.Serie + '/' + cast(cdv.Numero AS NVARCHAR) AS Documento,
     CONVERT(VARCHAR(23), cdv.DataCriacao, 120) AS DataCriacao,  -- Convertido para string
     cdv.NumeroCliente AS IdCliente,
     cli.CEP AS CepCliente,
@@ -44,8 +45,7 @@ WHERE cdv.Documento = 'FAT'
        p.IdSeccao IN (
            SELECT Id 
            FROM GV_SeccaoProduto 
-           WHERE Descricao LIKE '%Anestesia%'
-              OR Descricao LIKE '%Cardiologia%'
+           WHERE Descricao LIKE '%Cardiologia%'
               OR Descricao LIKE '%Imagem%'
        )
        OR 

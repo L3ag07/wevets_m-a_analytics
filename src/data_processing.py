@@ -63,14 +63,14 @@ def classificar_vendas(df):
             return 'Cardiologia'
         elif secao == 'Imagem':
             return 'Imagem'
-        elif secao == 'Anestesia' or familia == 'Cirurgia':
+        elif familia == 'Cirurgia':
             return 'Bloco Cirurgico'
-        elif familia in ['Retorno', 'Consulta']:
+        elif familia in ['Retorno', 'Consultas', 'Consulta']:
             return 'Clinica'
         else:
             # Assume-se que a query SQL filtra apenas registros relevantes
             # Retornar uma classificação válida em vez de "Outros"
-            return 'Clinica'  # Classificação padrão em caso de não correspondência
+            return 'Outros'  # Classificação padrão em caso de não correspondência
     
     # Aplicando a função de classificação a cada linha
     df['Classificacao'] = df.apply(determinar_classificacao, axis=1)
@@ -159,7 +159,10 @@ def preparar_dados(df):
             else:
                 return 0.75
         elif classificacao == 'Clinica':
-            return 1.0
+            if familia in ['Consultas', 'Consulta']:
+                return 1.0
+            else:
+                return 0.5
         elif classificacao == 'Imagem':
             if centro == 'RB':
                 return 0.5

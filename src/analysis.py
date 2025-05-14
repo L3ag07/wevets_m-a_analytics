@@ -90,77 +90,12 @@ def criar_tabela_unidade_por_mes(df):
             centro_col = 'Classificacao'
     else:
         centro_col = 'Centro'
-    
-    # Garantir que Ano e Mês existam e sejam inteiros
-    ano_mes_ok = True
-    
-    # Se já temos Ano e Mês, garantir que são inteiros
-    if 'Ano' in df.columns and 'Mes' in df.columns:
-        print("Verificando e convertendo Ano e Mês para inteiros...")
-        try:
-            # Usar astype para converter explicitamente para inteiros
-            df['Ano'] = pd.to_numeric(df['Ano'], errors='coerce').fillna(2023).astype('int32')
-            df['Mes'] = pd.to_numeric(df['Mes'], errors='coerce').fillna(1).astype('int32')
-            print(f"Amostra de valores de Ano após conversão: {df['Ano'].head(3).tolist()}")
-        except Exception as e:
-            print(f"ERRO ao converter Ano e Mês para inteiros: {e}")
-            ano_mes_ok = False
-    else:
-        ano_mes_ok = False
-    
-    # Se não temos Ano e Mês como inteiros, temos que criá-los
-    if not ano_mes_ok:
-        # Se temos DataCriacao, extrair Ano e Mês
-        if 'DataCriacao' in df.columns:
-            print("Processando DataCriacao para extrair Ano e Mês como inteiros...")
-            
-            # Se for datetime
-            if pd.api.types.is_datetime64_dtype(df['DataCriacao']):
-                df['Ano'] = df['DataCriacao'].dt.year.astype('int32')
-                df['Mes'] = df['DataCriacao'].dt.month.astype('int32')
-            else:
-                # Para o formato específico '2023-03-09 04:40:17 -03'
-                def extrair_ano(valor):
-                    if not isinstance(valor, str):
-                        return 2023
-                    
-                    # Remover a parte do timezone se existir
-                    valor_limpo = valor.split(' -03')[0] if ' -03' in valor else valor
-                    
-                    # Extrair o ano (primeiros 4 caracteres)
-                    try:
-                        return int(valor_limpo[:4])
-                    except:
-                        return 2023
-                
-                def extrair_mes(valor):
-                    if not isinstance(valor, str):
-                        return 1
-                    
-                    # Remover a parte do timezone se existir
-                    valor_limpo = valor.split(' -03')[0] if ' -03' in valor else valor
-                    
-                    # Extrair o mês (caracteres 5 e 6, considerando que há um hífen)
-                    try:
-                        return int(valor_limpo[5:7])
-                    except:
-                        return 1
-                
-                df['Ano'] = df['DataCriacao'].apply(extrair_ano)
-                df['Mes'] = df['DataCriacao'].apply(extrair_mes)
-        else:
-            # Se não temos DataCriacao, usamos valores padrão
-            print("AVISO: Não há coluna DataCriacao. Usando valores padrão para Ano e Mês.")
-            df['Ano'] = 2023
-            df['Mes'] = 1
-    
+
     # Verificar se Ano e Mês estão corretos
     print(f"Tipos de dados das colunas: Ano ({df['Ano'].dtype}), Mes ({df['Mes'].dtype})")
     print(f"Primeiros valores de Ano: {df['Ano'].head(3).tolist()}")
     
     # Agrupar por centro, ano e mês para contagem - garantindo que são inteiros antes
-    df['Ano'] = df['Ano'].astype('int32')
-    df['Mes'] = df['Mes'].astype('int32')
     tabela_contagem = df.groupby([centro_col, 'Ano', 'Mes']).size().reset_index(name='Contagem')
     
     # Criar coluna de período para melhor visualização - COM VERIFICAÇÃO DE TIPO
@@ -223,25 +158,6 @@ def criar_tabela_horas_por_mes(df):
             hora_col = colunas_horas[0]
             print(f"Usando coluna {hora_col} para cálculo de horas.")
     
-    # Garantir que Ano e Mês existam e sejam inteiros (mesmo processo da outra função)
-    ano_mes_ok = True
-    
-    if 'Ano' in df.columns and 'Mes' in df.columns:
-        try:
-            # Converter explicitamente para inteiros
-            df['Ano'] = pd.to_numeric(df['Ano'], errors='coerce').fillna(2023).astype('int32')
-            df['Mes'] = pd.to_numeric(df['Mes'], errors='coerce').fillna(1).astype('int32')
-        except Exception as e:
-            print(f"ERRO ao converter Ano e Mês para inteiros: {e}")
-            ano_mes_ok = False
-    else:
-        ano_mes_ok = False
-    
-    if not ano_mes_ok:
-        # Valores padrão se não conseguir converter
-        df['Ano'] = 2023
-        df['Mes'] = 1
-    
     # Verificar se existe coluna de centro
     if 'Centro' not in df.columns:
         possiveis_colunas = [col for col in df.columns if 'centr' in col.lower() or 'unit' in col.lower()]
@@ -267,8 +183,6 @@ def criar_tabela_horas_por_mes(df):
             hora_col = 'temp_valor'
     
     # Agrupar por centro, ano e mês para soma de horas
-    df['Ano'] = df['Ano'].astype('int32')  # Garantir tipo inteiro
-    df['Mes'] = df['Mes'].astype('int32')  # Garantir tipo inteiro
     tabela_horas = df.groupby([centro_col, 'Ano', 'Mes']).agg({
         hora_col: 'sum'
     }).reset_index()
@@ -287,15 +201,13 @@ def criar_tabela_horas_por_mes(df):
     
     return tabela_horas
 
-"""
-Versão simplificada do salvar_excel_simplificado usando a nova função para remover timezones
-"""
 def salvar_excel_simplificado(df, pasta_saida='output'):
     """
     Função que salva as tabelas em Excel, com abas separadas por classificação.
+    Assume que df já foi classificado e preparado com horas.
     
     Args:
-        df (pandas.DataFrame): DataFrame com os dados.
+        df (pandas.DataFrame): DataFrame com os dados já classificados e preparados.
         pasta_saida (str): Pasta onde o arquivo será salvo.
     
     Returns:
@@ -312,14 +224,25 @@ def salvar_excel_simplificado(df, pasta_saida='output'):
     arquivo_excel = os.path.join(pasta_saida, f'relatorio_por_classificacao_{timestamp}.xlsx')
     
     try:
+        # Verificar se as colunas essenciais já existem
+        if 'Classificacao' not in df.columns:
+            print("AVISO: Coluna 'Classificacao' não encontrada. O DataFrame deve ser classificado antes.")
+            return None
+            
+        if 'hora' not in df.columns:
+            print("AVISO: Coluna 'hora' não encontrada. O DataFrame deve ser preparado antes.")
+            return None
+        
+        # Remover timezones para evitar problemas
+        df_limpo = df
+        
         # Criar as tabelas por classificação
         print("Criando tabelas separadas por classificação (Cardiologia, Imagem, etc.)...")
-        tabelas_por_classificacao = criar_tabelas_por_cluster(df)
+        tabelas_por_classificacao = criar_tabelas_por_cluster(df_limpo)
         
         if not tabelas_por_classificacao:
             print("AVISO: Não foi possível criar tabelas por classificação. Usando método anterior...")
             # Usar o método anterior se não conseguir criar tabelas por classificação
-            df_limpo = remover_todos_timezones(df)
             tabela_unidades = criar_tabela_unidade_por_mes(df_limpo)
             tabela_horas = criar_tabela_horas_por_mes(df_limpo)
             tabela_unidades_pivot = formatar_tabela_pivot(tabela_unidades, 'Contagem')
@@ -536,14 +459,13 @@ def remover_todos_timezones(df):
     print(f"Processamento concluído. Colunas tratadas: {colunas_processadas}")
     return df_limpo      
 
-
 def criar_tabelas_por_cluster(df):
     """
     Cria tabelas separadas para cada classificação (Cardiologia, Imagem, etc.)
-    usando especificamente a coluna 'Classificacao' criada pelo processo de classificação.
+    Assume que o DataFrame já possui as colunas 'Classificacao' e 'hora'.
     
     Args:
-        df (pandas.DataFrame): DataFrame com os dados completos
+        df (pandas.DataFrame): DataFrame com os dados já classificados e preparados
         
     Returns:
         dict: Dicionário com DataFrames para cada classificação
@@ -557,36 +479,17 @@ def criar_tabelas_por_cluster(df):
         return tabelas_por_classificacao
     
     # Limpar e remover timezones
-    df_limpo = remover_todos_timezones(df)
+    df_limpo = df.copy()
     
-    # Verificar se existe a coluna 'Classificacao'
-    if df_limpo is None or 'Classificacao' not in df_limpo.columns:
-        print("AVISO: Coluna 'Classificacao' não encontrada. Criando classificação...")
-        try:
-            # Tentar classificar os dados
-            from src.data_processing import classificar_vendas
-            df_limpo = classificar_vendas(df_limpo)
-            
-            if df_limpo is None or 'Classificacao' not in df_limpo.columns:
-                raise Exception("Classificação falhou")
-        except Exception as e:
-            print(f"ERRO ao classificar dados: {e}")
-            print("Criando uma classificação fictícia 'Todos' para demonstração.")
-            if df_limpo is None:
-                import pandas as pd
-                df_limpo = pd.DataFrame()
-            df_limpo['Classificacao'] = 'Todos'
-    
-    # IMPORTANTE: Adicionar chamada para preparar_dados para criar a coluna 'hora'
-    from src.data_processing import preparar_dados
-    print("Preparando dados para adicionar coluna 'hora'...")
-    df_limpo = preparar_dados(df_limpo)
+    # Verificar se existem as colunas necessárias
+    colunas_obrigatorias = ['Classificacao', 'hora']
+    for coluna in colunas_obrigatorias:
+        if coluna not in df_limpo.columns:
+            print(f"AVISO: Coluna '{coluna}' não encontrada. DataFrame deve ser processado previamente.")
+            return {}
     
     # Identificar todas as classificações únicas
-    if df_limpo is not None and 'Classificacao' in df_limpo.columns:
-        classificacoes = sorted(df_limpo['Classificacao'].dropna().unique())
-    else:
-        classificacoes = []
+    classificacoes = sorted(df_limpo['Classificacao'].dropna().unique())
     
     print(f"Classificações identificadas: {classificacoes}")
     
@@ -596,10 +499,7 @@ def criar_tabelas_por_cluster(df):
     for classificacao in classificacoes:
         print(f"\nProcessando classificação: {classificacao}")
         
-        # Filtrar dados pela classificação, garantindo que df_limpo não é None
-        if df_limpo is None:
-            print("AVISO: df_limpo é None. Ignorando classificação.")
-            continue
+        # Filtrar dados pela classificação
         df_classificado = df_limpo[df_limpo['Classificacao'] == classificacao].copy()
         
         if df_classificado.empty:
@@ -633,7 +533,6 @@ def criar_tabelas_por_cluster(df):
             traceback.print_exc()
     
     return tabelas_por_classificacao
-
 
 def formatar_tabela_pivot(df_tabela, valor_col='Contagem'):
     """
