@@ -176,11 +176,10 @@ def criar_tabela_unidade_por_mes(df):
     print(f"Tabela de contagem por centro e mês criada com {len(tabela_contagem)} linhas.")
     return tabela_contagem
 
-
 def criar_tabela_horas_por_mes(df):
     """
     Cria uma tabela de quantidade de horas por mês.
-    Versão corrigida para dar prioridade à coluna 'hora' e garantir que Ano e Mês sejam valores inteiros.
+    Versão corrigida para priorizar a coluna 'hora' e garantir que Ano e Mês sejam valores inteiros.
     
     Args:
         df (pandas.DataFrame): DataFrame com os dados classificados.
@@ -188,9 +187,9 @@ def criar_tabela_horas_por_mes(df):
     Returns:
         pandas.DataFrame: DataFrame com a quantidade de horas por mês.
     """
-    # Verificar se existe coluna 'hora' primeiro
+    # Verificar se existe coluna 'hora' primeiro (NOVA VERIFICAÇÃO)
     if 'hora' in df.columns:
-        print("Usando coluna 'hora' para cálculo de horas.")
+        print(f"Usando coluna 'hora' para cálculo de horas. Média: {df['hora'].mean():.2f}")
         hora_col = 'hora'
     else:
         # Verificar se existem outras colunas de horas
@@ -287,7 +286,6 @@ def criar_tabela_horas_por_mes(df):
     }, inplace=True)
     
     return tabela_horas
-
 
 """
 Versão simplificada do salvar_excel_simplificado usando a nova função para remover timezones
@@ -585,7 +583,10 @@ def criar_tabelas_por_cluster(df):
     df_limpo = preparar_dados(df_limpo)
     
     # Identificar todas as classificações únicas
-    classificacoes = sorted(df_limpo['Classificacao'].dropna().unique())
+    if df_limpo is not None and 'Classificacao' in df_limpo.columns:
+        classificacoes = sorted(df_limpo['Classificacao'].dropna().unique())
+    else:
+        classificacoes = []
     
     print(f"Classificações identificadas: {classificacoes}")
     
@@ -595,7 +596,10 @@ def criar_tabelas_por_cluster(df):
     for classificacao in classificacoes:
         print(f"\nProcessando classificação: {classificacao}")
         
-        # Filtrar dados pela classificação
+        # Filtrar dados pela classificação, garantindo que df_limpo não é None
+        if df_limpo is None:
+            print("AVISO: df_limpo é None. Ignorando classificação.")
+            continue
         df_classificado = df_limpo[df_limpo['Classificacao'] == classificacao].copy()
         
         if df_classificado.empty:

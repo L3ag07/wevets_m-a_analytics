@@ -17,7 +17,6 @@ from src.data_access import carregar_do_parquet
 # Importar a nova função simplificada de análise
 from src.analysis import salvar_excel_simplificado
 
-# Modificação para main.py
 def main():
     """
     Função principal simplificada que carrega um arquivo Parquet e gera tabelas específicas.
@@ -85,15 +84,6 @@ def main():
                     print(f"Conversão realizada. Tipo atual: {df_vendas['DataExecucao'].dtype}")
             except Exception as e:
                 print(f"Erro ao converter DataExecucao: {e}")
-        
-        # IMPORTANTE: Adicionar aqui a chamada para preparar_dados
-        from src.data_processing import preparar_dados
-        print("\nPreparando dados para adicionar coluna 'hora'...")
-        df_vendas = preparar_dados(df_vendas)
-        if df_vendas is not None and 'hora' in df_vendas.columns:
-            print(f"Coluna 'hora' criada com sucesso. Média de horas: {df_vendas['hora'].mean():.2f}")
-        else:
-            print("AVISO: Coluna 'hora' não foi criada corretamente ou df_vendas é None.")
         
         # Gerar o relatório simplificado com as tabelas solicitadas
         print("\nGerando relatório simplificado com tabelas de centro por mês e horas por mês...")
