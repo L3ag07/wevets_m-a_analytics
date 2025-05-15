@@ -8,7 +8,7 @@ import pyodbc
 import pandas as pd
 import pathlib
 from datetime import datetime
-from config.database import get_connection_string
+from config.database import get_connection_string, get_sql_auth_connection_string
 
 def estabelecer_conexao():
     """
@@ -19,7 +19,7 @@ def estabelecer_conexao():
     """
     try:
         # Obter string de conexão Azure AD com MFA
-        conn_string = get_connection_string()
+        conn_string = get_sql_auth_connection_string()
         print(f"Tentando conectar com autenticação Azure AD:\n{conn_string}")
         
         # Tentar estabelecer conexão
@@ -138,15 +138,7 @@ def salvar_como_parquet(df, nome_arquivo=None):
         pathlib.Path: Caminho para o arquivo salvo.
     """
     try:
-        # Instalar pyarrow se necessário
-        try:
-            import pyarrow
-        except ImportError:
-            print("Instalando dependências necessárias...")
-            import subprocess
-            subprocess.check_call([sys.executable, "-m", "pip", "install", "pyarrow"])
-            import pyarrow
-        
+                
         # Criar diretório de saída se não existir
         diretorio_saida = pathlib.Path().resolve() / "output"
         diretorio_saida.mkdir(parents=True, exist_ok=True)

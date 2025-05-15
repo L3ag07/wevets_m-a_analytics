@@ -59,7 +59,7 @@ def classificar_vendas(df):
         familia = str(row['Familia']).strip() if pd.notna(row['Familia']) else ""
         
         # Aplicando regras de classificação
-        if secao == 'Cardiologia':
+        if secao == 'Cardiologia' and familia not in ['Retorno', 'Consultas', 'Consulta']:
             return 'Cardiologia'
         elif secao == 'Imagem':
             return 'Imagem'
@@ -151,15 +151,15 @@ def preparar_dados(df):
         """
         classificacao = row['Classificacao'] if 'Classificacao' in row else ""
         familia = str(row['Familia']).strip() if pd.notna(row['Familia']) else ""
+        secao = str(row['Secao']).strip() if pd.notna(row['Secao']) else ""
         centro = str(row['Centro']).strip() if 'Centro' in row and pd.notna(row['Centro']) else ""
         
         if classificacao == 'Cardiologia':
-            if familia in ['Consultas', 'Consulta']:
-                return 1.5
-            else:
-                return 0.75
+            return 0.75
         elif classificacao == 'Clinica':
-            if familia in ['Consultas', 'Consulta']:
+            if secao == 'Cardiologia':
+                return 1.5
+            elif familia in ['Consultas', 'Consulta']:
                 return 1.0
             else:
                 return 0.5
